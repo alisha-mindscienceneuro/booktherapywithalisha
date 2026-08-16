@@ -784,7 +784,7 @@
         <div class="checkbox-row"><input type="checkbox" required><span>I understand the scope and limits of confidentiality described above.</span></div>
         <div class="checkbox-row"><input type="checkbox" required><span>I voluntarily agree to participate in these sessions.</span></div>
 
-        <div class="field"><label>Date<span class="req-star">*</span></label><input type="date" name="consent_date" required style="max-width:220px;"></div>
+        <div class="field"><label>Date<span class="req-star">*</span></label><input type="date" name="consent_date" id="consentDateField" required readonly style="max-width:220px; background:rgba(255,255,255,0.04); cursor:not-allowed;"></div>
 
         <button type="submit" class="btn btn-gold btn-block" style="margin-top:6px;">Submit & Continue to Booking</button>
         <p class="form-note" id="emailStatusNote">Your responses are emailed to Alisha's practice with a unique reference ID, then you'll be taken to Calendly to pick your slot.</p>
@@ -920,7 +920,9 @@
         <div class="pkg-pay-label">Scan & Pay Using Any UPI App</div>
         <p class="sub" style="margin-bottom:0;">Scan the QR code and pay securely using PhonePe, Google Pay, Paytm, or your banking app.</p>
         <div class="qr-wrap" style="margin-top:14px;">
-          <div id="pkgQrCode" class="pkg-qr-svg" role="img" aria-label="UPI QR code to pay Alisha Shafique"></div>
+          <a id="pkgQrLink" href="#" target="_blank" rel="noopener" aria-label="Tap to open your UPI payment app" style="display:inline-block; text-decoration:none;">
+            <div id="pkgQrCode" class="pkg-qr-svg" role="img" aria-label="UPI QR code to pay Alisha Shafique"></div>
+          </a>
         </div>
         <p class="qr-note" id="pkgQrNote">Choose a plan above and this QR will update automatically to that amount.</p>
         <div class="payee">ALISHA SHAFIQUE</div>
@@ -3327,7 +3329,25 @@ var qrcode = function() {
     // Added: reset Step 2 (payment) visibility too, in case the modal is reopened mid-flow.
     document.getElementById('modalPaymentView').style.display = 'none';
     document.getElementById('modalPaymentConfirmView').style.display = 'none';
+    setConsentDateToToday();
     openModal('intakeConsentModal');
+  }
+
+  // Consent form's "Date" field must always be the actual date of signing —
+  // never a past or future date the visitor could pick. It's set here
+  // automatically (readonly in the markup) every time the form is opened,
+  // so it always reflects "today" even if the modal was left open overnight.
+  function setConsentDateToToday(){
+    const field = document.getElementById('consentDateField');
+    if (!field) return;
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const today = yyyy + '-' + mm + '-' + dd;
+    field.value = today;
+    field.setAttribute('min', today);
+    field.setAttribute('max', today);
   }
 
   function openModal(id){ document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
@@ -3532,6 +3552,12 @@ var qrcode = function() {
     } catch (err) {
       console.warn('QR generation failed:', err);
     }
+
+    // Make the QR tappable: on mobile, tapping it opens the same UPI
+    // deep link directly in the user's default UPI app (PhonePe/GPay/
+    // Paytm/etc.), so they aren't forced to scan with a separate camera.
+    const link = document.getElementById('pkgQrLink');
+    if (link) link.href = upiUrl;
 
     if (note) {
       note.textContent = amt
